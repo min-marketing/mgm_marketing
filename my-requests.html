@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 신청 내역</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: #EEF3FF;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    .page-header {
+      width: 100%;
+      max-width: 680px;
+      background: #2B5BF0;
+      border-radius: 16px 16px 0 0;
+      padding: 32px 36px 28px;
+      color: #fff;
+    }
+
+    .page-header .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #9FB8FF;
+      margin-bottom: 8px;
+    }
+
+    .page-header h1 { font-size: 22px; font-weight: 800; }
+    .page-header p  { margin-top: 6px; font-size: 13px; color: #BAD0FF; }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 14px;
+      font-size: 12px;
+      color: #9FB8FF;
+      text-decoration: none;
+    }
+    .back-link:hover { color: #fff; }
+
+    .card {
+      background: #fff;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 8px 32px rgba(43, 91, 240, 0.10);
+      padding: 36px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: #2B5BF0;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .lookup-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .lookup-form input {
+      flex: 1;
+      min-width: 140px;
+      padding: 11px 14px;
+      border: 1.5px solid #DDE2F0;
+      border-radius: 9px;
+      font-size: 14px;
+      color: #1A1F36;
+      background: #FAFBFF;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .lookup-form input:focus {
+      border-color: #2B5BF0;
+      box-shadow: 0 0 0 3px rgba(43,91,240,0.10);
+      background: #fff;
+    }
+
+    .lookup-btn {
+      padding: 11px 22px;
+      background: #2B5BF0;
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s;
+      white-space: nowrap;
+    }
+    .lookup-btn:hover    { background: #1A45D4; }
+    .lookup-btn:disabled { background: #9FB8FF; cursor: not-allowed; }
+
+    .divider { border: none; border-top: 1px solid #EEF1F8; margin: 28px 0; }
+
+    #resultArea { display: none; }
+
+    .result-count { font-size: 13px; color: #666; margin-bottom: 16px; }
+    .result-count strong { color: #1A1F36; font-weight: 700; }
+
+    /* 신청 카드 */
+    .request-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .request-card {
+      border: 1.5px solid #EEF1F8;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .request-card:hover { border-color: #C5D4FF; }
+
+    /* 카드 요약 뷰 */
+    .card-summary { padding: 18px 20px; position: relative; }
+
+    .card-date { font-size: 11px; color: #AAB0C4; margin-bottom: 10px; }
+
+    .card-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .card-row:last-of-type { margin-bottom: 0; }
+
+    .card-label {
+      font-weight: 600;
+      color: #8A93B0;
+      white-space: nowrap;
+      min-width: 70px;
+    }
+
+    .card-value { color: #1A1F36; line-height: 1.5; word-break: break-word; }
+
+    .channel-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #EEF3FF;
+      color: #2B5BF0;
+      margin-right: 4px;
+    }
+
+    /* 발송 상태 뱃지 */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-badge.pending {
+      background: #F5F6FA;
+      color: #8A93B0;
+      border: 1px solid #DDE2F0;
+    }
+
+    .status-badge.done {
+      background: #E8F8F0;
+      color: #1A8A50;
+      border: 1px solid #A8E0C4;
+    }
+
+    /* 카드 액션 버튼 영역 */
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+
+    .btn-edit {
+      padding: 5px 12px;
+      background: none;
+      border: 1.5px solid #C5D4FF;
+      border-radius: 6px;
+      color: #2B5BF0;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-edit:hover { background: #EEF3FF; }
+
+    .btn-delete {
+      padding: 5px 12px;
+      background: none;
+      border: 1.5px solid #F5B7B1;
+      border-radius: 6px;
+      color: #D63B3B;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-delete:hover { background: #FEF0F0; }
+
+    /* 인라인 수정 폼 */
+    .edit-form {
+      display: none;
+      border-top: 1.5px solid #EEF1F8;
+      padding: 20px;
+      background: #FAFBFF;
+    }
+
+    .edit-form.open { display: block; }
+
+    .edit-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #2B5BF0;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .edit-field { margin-bottom: 16px; }
+
+    .edit-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 7px;
+    }
+
+    /* 채널 선택 (수정 폼) */
+    .channel-group-edit { display: flex; gap: 8px; }
+
+    .channel-item-edit {
+      flex: 1;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .channel-item-edit input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .channel-box-edit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 10px;
+      border: 1.5px solid #DDE2F0;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .channel-item-edit input:checked ~ .channel-box-edit {
+      border-color: #2B5BF0;
+      background: #EEF3FF;
+      color: #2B5BF0;
+    }
+
+    /* textarea */
+    textarea {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1.5px solid #DDE2F0;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #1A1F36;
+      background: #fff;
+      outline: none;
+      resize: vertical;
+      min-height: 90px;
+      font-family: inherit;
+      line-height: 1.6;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    textarea:focus {
+      border-color: #2B5BF0;
+      box-shadow: 0 0 0 3px rgba(43,91,240,0.10);
+    }
+
+    /* 파일 업로드 (수정 폼) */
+    .upload-area-sm {
+      border: 1.5px dashed #CBD0E0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      background: #fff;
+      transition: all 0.18s;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .upload-area-sm:hover { border-color: #2B5BF0; background: #EEF3FF; }
+
+    .upload-area-sm input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .file-selected-sm {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #EEF3FF;
+      border-radius: 7px;
+      font-size: 12px;
+      color: #2B5BF0;
+      border: 1px solid #C5D4FF;
+    }
+
+    .file-selected-sm .file-name-sm {
+      flex: 1;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-selected-sm .remove-sm {
+      cursor: pointer;
+      color: #AAB0C4;
+      font-size: 14px;
+    }
+
+    .file-selected-sm .remove-sm:hover { color: #e74c3c; }
+
+    .file-keep-note {
+      font-size: 11px;
+      color: #AAB0C4;
+      margin-top: 6px;
+    }
+
+    /* 수정 폼 버튼 */
+    .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+    .btn-save {
+      flex: 1;
+      padding: 10px;
+      background: #2B5BF0;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-save:hover    { background: #1A45D4; }
+    .btn-save:disabled { background: #9FB8FF; cursor: not-allowed; }
+
+    .btn-cancel-edit {
+      padding: 10px 16px;
+      background: none;
+      border: 1.5px solid #DDE2F0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+    }
+
+    /* 빈 결과 */
+    .empty-state { text-align: center; padding: 48px 20px; color: #AAB0C4; }
+    .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* 알림 */
+    .alert {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .alert.error   { background: #FEF0F0; color: #D63B3B; border: 1px solid #F5B7B1; }
+    .alert.success { background: #E8F8F0; color: #1A8A50; border: 1px solid #A8E0C4; }
+
+    /* 삭제 확인 모달 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 28px 28px 24px;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    }
+    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #1A1F36; }
+    .modal p  { font-size: 13px; color: #666; line-height: 1.6; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+
+    .modal-cancel {
+      flex: 1;
+      padding: 11px;
+      border: 1.5px solid #DDE2F0;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .modal-confirm {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      background: #E74C3C;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .modal-confirm:hover { background: #C0392B; }
+
+    .spinner-sm {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .page-header { padding: 24px 20px 20px; border-radius: 12px 12px 0 0; }
+      .card { padding: 24px 16px 28px; }
+      .lookup-form { flex-direction: column; }
+      .lookup-btn { width: 100%; }
+      .card-actions { position: static; margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="label">EM 발송 요청 시스템</div>
+  <h1>내 신청 내역</h1>
+  <p>이름과 연락처로 조회 후 수정 · 삭제할 수 있습니다.</p>
+  <a class="back-link" href="index.html">← 신청 페이지로 돌아가기</a>
+</div>
+
+<div class="card">
+
+  <div class="section-title">본인 확인</div>
+  <div class="alert" id="alert"></div>
+
+  <div class="lookup-form">
+    <input type="text" id="inputName"    placeholder="EM 담당자명" />
+    <input type="tel"  id="inputContact" placeholder="010-0000-0000" />
+    <button class="lookup-btn" id="lookupBtn" onclick="lookup()">조회하기</button>
+  </div>
+
+  <div id="resultArea">
+    <hr class="divider" />
+    <div class="section-title">신청 내역</div>
+    <p class="result-count"><strong id="resultCount">0</strong>건의 신청 내역</p>
+    <div class="request-list" id="requestList"></div>
+  </div>
+
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>신청을 삭제할까요?</h3>
+    <p>삭제된 신청 내역은 복구할 수 없습니다.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">취소</button>
+      <button class="modal-confirm" id="modalConfirm">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPt8U2kFqw-C9Du2Ycb9KoL60emS2CJ8ujoSg26khfPTGJe4ubHMpiZv5ftLiDCn08hA/exec';
+
+  let currentName    = '';
+  let currentContact = '';
+
+  // ── 조회 ───────────────────────────────────────────────────
+  async function lookup() {
+    const name    = document.getElementById('inputName').value.trim();
+    const contact = document.getElementById('inputContact').value.trim();
+    if (!name || !contact) return showAlert('error', '이름과 연락처를 모두 입력해 주세요.');
+
+    currentName    = name;
+    currentContact = contact;
+
+    const btn = document.getElementById('lookupBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span>';
+
+    try {
+      const fd = new FormData();
+      fd.append('action', 'lookup');
+      fd.append('name',    name);
+      fd.append('contact', contact);
+
+      const res  = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (data.status !== 'success') return showAlert('error', data.message || '조회 중 오류 발생');
+
+      hideAlert();
+      renderResults(data.rows);
+    } catch {
+      showAlert('error', '서버 연결에 실패했습니다.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '조회하기';
+    }
+  }
+
+  // ── 렌더링 ─────────────────────────────────────────────────
+  function renderResults(rows) {
+    document.getElementById('resultArea').style.display = 'block';
+    document.getElementById('resultCount').textContent  = rows.length;
+    const list = document.getElementById('requestList');
+    list.innerHTML = '';
+
+    if (rows.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📭</div>
+          <p>신청 내역이 없습니다.</p>
+        </div>`;
+      return;
+    }
+
+    rows.forEach(row => {
+      const card = document.createElement('div');
+      card.className = 'request-card';
+      card.id = 'card-' + row.id;
+
+      const channelBadges = (row.channels || '').split(',')
+        .map(c => `<span class="channel-badge">${c.trim()}</span>`).join('');
+
+      const isDone     = row.status === '발송 완료';
+      const statusBadge = isDone
+        ? `<span class="status-badge done">✅ 발송 완료</span>`
+        : `<span class="status-badge pending">⏳ 발송 전</span>`;
+
+      const currentChannels = (row.channels || '').split(',').map(c => c.trim());
+      const mailChecked  = currentChannels.includes('메일')  ? 'checked' : '';
+      const smsChecked   = currentChannels.includes('문자')  ? 'checked' : '';
+
+      card.innerHTML = `
+        <!-- 요약 뷰 -->
+        <div class="card-summary">
+          <div class="card-date" style="display:flex; align-items:center; justify-content:space-between;">
+            <span>📅 ${row.date}</span>
+            ${statusBadge}
+          </div>
+          <div class="card-row" style="margin-top:10px;">
+            <span class="card-label">발송 채널</span>
+            <span class="card-value" id="view-channel-${row.id}">${channelBadges}</span>
+          </div>
+          <div class="card-row">
+            <span class="card-label">원하는 문구</span>
+            <span class="card-value" id="view-message-${row.id}">${escHtml(row.message)}</span>
+          </div>
+          <div class="card-row">
+            <span class="card-label">고객 데이터</span>
+            <span class="card-value" id="view-file-${row.id}">${escHtml(String(row.file))}</span>
+          </div>
+          <div class="card-actions">
+            ${isDone ? '' : `
+              <button class="btn-edit"   onclick="openEdit('${escAttr(row.id)}')">수정</button>
+              <button class="btn-delete" onclick="confirmDelete('${escAttr(row.id)}')">삭제</button>
+            `}
+          </div>
+        </div>
+
+        <!-- 인라인 수정 폼 -->
+        <div class="edit-form" id="edit-${row.id}">
+          <div class="edit-field">
+            <div class="edit-section-label">발송 채널</div>
+            <div class="channel-group-edit">
+              <label class="channel-item-edit">
+                <input type="checkbox" name="edit-channel-${row.id}" value="메일" ${mailChecked} />
+                <div class="channel-box-edit">✉️ 메일</div>
+              </label>
+              <label class="channel-item-edit">
+                <input type="checkbox" name="edit-channel-${row.id}" value="문자" ${smsChecked} />
+                <div class="channel-box-edit">💬 문자</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="edit-field">
+            <div class="edit-section-label">원하는 문구</div>
+            <textarea id="edit-message-${row.id}">${escHtml(row.message)}</textarea>
+          </div>
+
+          <div class="edit-field">
+            <div class="edit-section-label">고객 리스트</div>
+            <div class="upload-area-sm" id="upload-area-${row.id}">
+              <input type="file" id="edit-file-${row.id}" accept=".xlsx,.xls"
+                onchange="onFileChange('${escAttr(row.id)}')" />
+              📂 새 파일 선택 또는 드래그
+            </div>
+            <div class="file-selected-sm" id="file-selected-${row.id}">
+              <span>📄</span>
+              <span class="file-name-sm" id="file-name-${row.id}"></span>
+              <span class="remove-sm" onclick="removeFile('${escAttr(row.id)}')">✕</span>
+            </div>
+            <p class="file-keep-note">파일을 올리지 않으면 기존 파일이 유지됩니다.</p>
+          </div>
+
+          <div class="edit-actions">
+            <button class="btn-cancel-edit" onclick="closeEdit('${escAttr(row.id)}')">취소</button>
+            <button class="btn-save" id="save-btn-${row.id}" onclick="saveEdit('${escAttr(row.id)}')">
+              저장하기
+            </button>
+          </div>
+        </div>
+      `;
+
+      list.appendChild(card);
+    });
+  }
+
+  // ── 수정 폼 열기/닫기 ──────────────────────────────────────
+  function openEdit(id) {
+    // 다른 열린 폼 닫기
+    document.querySelectorAll('.edit-form.open').forEach(f => f.classList.remove('open'));
+    document.getElementById('edit-' + id).classList.add('open');
+  }
+
+  function closeEdit(id) {
+    document.getElementById('edit-' + id).classList.remove('open');
+  }
+
+  // ── 파일 처리 ─────────────────────────────────────────────
+  function onFileChange(id) {
+    const input = document.getElementById('edit-file-' + id);
+    if (input.files[0]) {
+      document.getElementById('file-name-' + id).textContent = input.files[0].name;
+      document.getElementById('file-selected-' + id).style.display = 'flex';
+    }
+  }
+
+  function removeFile(id) {
+    document.getElementById('edit-file-' + id).value = '';
+    document.getElementById('file-selected-' + id).style.display = 'none';
+  }
+
+  // ── 수정 저장 ──────────────────────────────────────────────
+  async function saveEdit(id) {
+    const channels = [...document.querySelectorAll(`input[name="edit-channel-${id}"]:checked`)]
+      .map(c => c.value);
+    const message  = document.getElementById('edit-message-' + id).value.trim();
+    const fileInput = document.getElementById('edit-file-' + id);
+
+    if (channels.length === 0) return showAlert('error', '발송 채널을 1개 이상 선택해 주세요.');
+    if (!message)              return showAlert('error', '원하는 문구를 입력해 주세요.');
+
+    const btn = document.getElementById('save-btn-' + id);
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span> 저장 중';
+
+    try {
+      const fd = new FormData();
+      fd.append('action',        'update');
+      fd.append('id',            id);
+      fd.append('name',          currentName);
+      fd.append('contact',       currentContact);
+      fd.append('channels',      channels.join(', '));
+      fd.append('customMessage', message);
+
+      if (fileInput.files[0]) {
+        fd.append('file', fileInput.files[0], fileInput.files[0].name);
+      }
+
+      const res  = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        showAlert('success', '✅ 수정이 저장되었습니다. 스프레드시트에 즉시 반영됩니다.');
+        closeEdit(id);
+        await lookup(); // 목록 새로고침
+      } else {
+        showAlert('error', data.message || '저장 중 오류가 발생했습니다.');
+      }
+    } catch {
+      showAlert('error', '서버 연결에 실패했습니다.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '저장하기';
+    }
+  }
+
+  // ── 삭제 ───────────────────────────────────────────────────
+  function confirmDelete(id) {
+    const overlay = document.getElementById('modalOverlay');
+    overlay.classList.add('active');
+    document.getElementById('modalConfirm').onclick = () => deleteRequest(id);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+  }
+
+  async function deleteRequest(id) {
+    const btn = document.getElementById('modalConfirm');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span>';
+
+    try {
+      const fd = new FormData();
+      fd.append('action',  'delete');
+      fd.append('id',      id);
+      fd.append('name',    currentName);
+      fd.append('contact', currentContact);
+
+      const res  = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: fd });
+      const data = await res.json();
+
+      closeModal();
+
+      if (data.status === 'success') {
+        showAlert('success', '✅ 신청이 삭제되었습니다.');
+        await lookup();
+      } else {
+        showAlert('error', data.message || '삭제 중 오류가 발생했습니다.');
+      }
+    } catch {
+      closeModal();
+      showAlert('error', '서버 연결에 실패했습니다.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '삭제';
+    }
+  }
+
+  // ── 유틸 ───────────────────────────────────────────────────
+  function showAlert(type, msg) {
+    const el = document.getElementById('alert');
+    el.className = 'alert ' + type;
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideAlert() {
+    document.getElementById('alert').style.display = 'none';
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,  '&amp;')
+      .replace(/</g,  '&lt;')
+      .replace(/>/g,  '&gt;')
+      .replace(/"/g,  '&quot;');
+  }
+
+  function escAttr(str) { return String(str).replace(/'/g, "\\'"); }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') lookup(); });
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  });
+</script>
+
+</body>
+</html>
